@@ -421,3 +421,73 @@
 -	책에 있는 핵심정리
 
 	-	cleaner(자바 8까지는 finalizer)는 안전망 역할이니 중요하지 않은 네이티브 자원 회수용으로만 사용하자. 이 때도 불확실성과 성능 저하에 주의할 것
+
+#### 아이템 9 : try - finally 보다는 try - with - resources 를 사용하라.
+
+-	자바 라이브러리에는 close 메서드를 호출해 직접 닫아줘야하는 자원이 많음
+
+	-	InputStream, OutputStream, java.sql.Connection
+
+-	전통적으로 자원이 제대로 닫히는 수단으로 try - finally 가 쓰였음
+
+	```java
+	static String firstLineOfFile(String path) throws IOException{
+	    BufferedReader br = new BufferedReader (new FileReader(path));
+
+
+	    try{
+	        return br.readLine();
+	    } finally{
+	        br.close();
+	    }
+
+
+	}
+	```
+
+-	하지만, 자원이 둘 이상이면 try-finally 방식은 지저분해지며, 다중 예외 발생 시(?) 디버깅이 어려울 수 있다.
+
+	```java
+	static void copy(String src, String dst) throws IOException {
+	    InputStream in = new FileInputStream(src);
+
+
+	    try{
+	        OutputStream out = new FileOutputStream(dst);
+
+
+	        try{
+	            byte[] buf = new byte[BUFFER_SIZE];
+	            int n ;
+	            while((n=in.read(buf)) >= 0){
+	                out.write(buf,0,n);
+	            }
+	        }finally{
+	            out.close();
+	        }
+	    }finally{
+	        in.close();
+	    }
+	}
+
+
+	```
+
+-	자바 7의 try-with-resources 덕에 해결됨 : try에 자원객체를 생성하면 try 블록이 끝나면 자동으로 자원을 종료해줌
+
+	-	사용하려면 해당 자원이 AutoCloseable 인터페이스를 구현해야함
+		-	자바 라이브러리와 서드파티 라이브러리들의 수많은 클래스와 인터페이스는 이미 AutoCloseable 을 구현하거나 확장해뒀음
+
+	```java
+	static String firstLineOfFile(String path, String defaultVal) {
+	    try(BufferedReader br = new BufferedReader(new FileReader(path))){
+	        return br.readLine();
+	    }catch(IOException e){
+	        return defaultVal;
+	    }
+	}
+	```
+
+-	책에 있는 핵심정리
+
+	-	꼭 회수해야하는 자원을 다룰때는 try-with-resources를 사용하자. 코드는 더 분명해지고, 만들어지는 예외 정보도 훨씬 유용하다.
