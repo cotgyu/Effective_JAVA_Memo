@@ -348,3 +348,103 @@
 		    ...
 		}
 		```
+
+#### 아이템 23 : 태그 달린 클래스보다 클래스 계층구조를 활용하라
+
+-	태그 달린 클래스에는 단점이 많다.
+
+	-	열거 타입선언, 태그 필드, switch문 등
+	-	여러 구현이 한 클래스에 혼합돼 있어 가독성이 나쁨
+	-	또 다른 의미를 추가하려면 코드를 수정해야하는데, 개발자 실수로 인해 문제가 발생할 수 있음
+
+		```java
+		class Figure{
+		    enum Shape {
+		        RECTANGLE, CIRCLE
+		    };
+
+
+		    final Shape = shape;
+
+
+		    double length;
+		    double width;
+		    double radius;
+
+
+		    Figure(double radius){
+		        shape = Shape.CIRCLE;
+		        this.radius = radius;
+		    }
+
+
+		    Figure(double length, double width){
+		        shape = Shape.RECTANGLE;
+		        this.length = length;
+		        this.width = width;
+		    }
+
+
+		    double area(){
+		        swith(shape){
+		            case RECTANGLE:
+		                return length * width;
+		            case CIRCLE:
+		                return Math.PI * (radius * radius);
+		            default:
+		                throw new AssertionError(shape);
+		        }
+		    }
+		}
+		```
+
+-	클래스 계층 구조를 통해 태그 달린 클래스의 단점을 모두 없앨 수 있음.
+
+	-	실수로 빼먹은 case 문 때문에 런타임 오류가 발생할 일 없음
+	-	다른 프로그래머들이 독립적으로 계층구조를 확장하고 함께 사용할 수 있음
+	-	타입 사이의 자연스러운 계층 관계를 반영할 수 있어서 유연성은 물론 컴파일 타입 검사능력을 높여줌
+
+		```java
+		abstract class Figure{
+		    abstract double area();
+		}
+
+
+		class Circle extends Figure{
+		    final double radius;
+
+
+		    Circle(double radius){
+		        this.radius = radius;
+		    }
+
+
+		    @Override double area() {
+		        return Math.PI * (radius * radius);
+		    }
+		}
+
+
+		class Rectangle extends Figure{
+		    final double length;
+		    final double width;
+
+
+		    Rectangle(double length, double width){
+		        this.length = length;
+		        this.width = width;
+		    }
+
+
+		    @Override double area(){
+		        return length * width;
+		    }
+		}
+
+
+		```
+
+-	책에 있는 핵심정리
+
+	-	태그 달린 클래스를 써야하는 상황은 거의 없다.
+	-	기존 클래스가 태그 필드를 사용하고 있다면 계층 구조로 리팩터링하는 걸 고민해보자.
