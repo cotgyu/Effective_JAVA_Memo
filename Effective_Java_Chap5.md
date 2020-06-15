@@ -127,3 +127,67 @@
 
 	-	제네릭 타입과 마찬가지로, 클라이언트에서 입력 매개변수와 반환 값을 명시적으로 형변해야 하는 메서드보다 제네릭 메서드가 더 안전하며 사용하기도 쉽다.
 	-	타입과 마찬가지로, 메서드도 형변환 없이 사용할 수 있는 편이 좋으며 많은 경우 그렇게 하려면 제네릭 메서드가 되어야 한다.
+
+#### 아이템 31 한정적 와일드카드를 사용해 API 유연성을 높이라
+
+-	매개변수와 타입은 불공변이다.
+
+	-	서로 다른 타입 Type1과 Type2가 있을 떄 List<Type1>은 List<Type2>의 하위타입도 상위타입도 아니다.
+
+-	떄론 불공변 방식보다 유연한 방식이 필요할 때가 있다.
+
+```java
+public class Stack<E>{
+	public Stack();
+	public void push(E e);
+	public E pop();
+}
+
+// 일련의 원소를 스탹에 넣는 메서드를 추가한다.
+public void pushAll(Iterable<E> src){
+	for(E e : src)
+		push(e);
+}
+
+// Stack<Number>로 선언한 후 pushAll(intVal)을 호출하면 에러가 발생한다.
+// error: incompatible types: Iterable<Integer>
+Stack<Number> numberStack = new Stack<>();
+Iterable<Integer> integers = ...;
+numberStack.pushAll(integers);
+
+
+// 이 경우 한정적 와일드카드 타입으로 대처가능하다.
+// E 의 하위 타입의 Iterable
+public void pushAll(Iterable<? extends E> src){
+	for (E e : src)
+		push(e);
+}
+```
+
+-	유연성을 극대화하려면 원소의 생산자나 소비자용 입력 매개변수에 와일드카드 타입을 사용하라.
+
+	-	하지만, 입력 매개변수가 생산자와 소비자 역할을 동시에 한다면 와일드카드 타입을 써도 좋을 게 없다. (타입을 정확하게 지정해야하는 상황이므로)
+
+-	펙스(PECS) : producer-extends, consumer-super
+
+	-	매개변수화 타입 T가 생산자라면 <? extends T>를 사용하고, 소비자라면<? super T>를 사용하라.
+		-	pushAll의 src 매개변수는 Stack이 사용할 E 인스턴스를 생산함.
+		-	popAll의 dst 매개변수는 Stack으로 부터 E 인스턴스를 소비함.
+
+> 클래스 사용자가 와일드 카드 타입을 신경써야 한다면 그 API에 무슨 문제가 있을 가능성이 크다.
+
+-	Comparable은 언제나 소비자이므로, Comparable<E>보다는 Comparable<? super E>를 사용하는 편이 낫다. (Comparator도 동일)
+
+-	타입 매개변수와 와일드카드에는 공통되는 부분이 있어서, 메서드를 정의할 때 둘 중 어느 것을 사용해도 괜찮을 경우가 있음.
+
+	```java
+	public static <E> void swap(List<E> list, int i, int j);
+	public static void swap(List<?> list, int i, int j);
+	```
+
+	-	**메서드 선언에 타입 매개변수가 한 번만 나오면 와일드 카드로 대체하라.**
+
+-	책에 있는 핵심정리
+
+	-	조금 복잡하더라도 와일드카드 타입을 적용하면 API가 훨씬 유연해진다.
+	-	PECS 공식을 기억하자.
