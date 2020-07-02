@@ -36,3 +36,27 @@
 	-	각 상수를 특정 데이터와 연결짓거나 상수마다 다르게 동작하게 할 때는 생성자나 메서드가 필요하다.
 	-	하나의 메서드가 상수별로 다르게 동작해야할 때는 switch 대신 상수별 메서드 구현을 사용하자.
 	-	열거 타입 상수 일부가 같은 동작을 공유한다면 전략 열거 타입 패턴을 사용하자.
+
+#### 아이템 35 ordinal 메서다 대신 인스턴스 필드를 사용하라
+
+-	모든 열거 타입은 해당 상수가 그 열거 타입에서 몇 번째 위치인지를 반환하는 ordinal 메서드를 제공한다.
+
+	-	ordinal을 잘못 사용하면 유지보수 끔찍해진다.
+	-	ordinal은 EnumSet과 EnumMap 같이 열거 타입 기반의 범용 자료구조에 쓸 목적으로 설계되었다. 이런 용도가 아니라면 사용하지 말자.
+
+-	열거 타입 상수에 연결된 값은 ordinal 메서드로 얻지 말고, 인스턴스 필드에 저장하자.
+
+```java
+public enum Ensemble{
+  SOLE(1), DEUT(2), TRIO(3), QUARTET(4), QUINTET(5);
+
+  private final int numberOfMusicians;
+  Ensemble(int size) {
+    this.numberOfMusicians = size;
+  }
+  public int numberOfMusicians(){
+    return numberOfMusicians;
+  }
+}
+
+```
