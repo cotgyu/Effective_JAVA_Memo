@@ -117,3 +117,48 @@ System.out.println(Arrays.stream(garden).collect(groupingBy(p -> p.lifeCycle, ()
 -	책에 있는 핵심 정리
 	-	배열의 인덱스를 얻기 위해 ordinal을 쓰는 것은 일반적으로 좋지 않으니, EnumMap을 사용하라.
 	-	다차원 관계는 EnumMap<..., EnumMap<...>> 으로 표현해라.
+
+#### 아이템 38 확장할 수 있는 열거 타입이 필요하면 인터페이스를 사용하라
+
+-	열거 타입은 거의 모든 상황에서 타입 안전 열거 패턴보다 우수하지만, 확장할 수 없다는 것이 단점이다.
+
+	-	대부분의 상황에서 열거 타입을 확장하는 건 좋지 않은 생각이나, 필요한 쓰임이 있다.
+
+	-	열거 타입은 인터페이스를 구현할 수 있음으로 이를 활용하여 확장을 할 수 있다.
+
+```java
+public interface Operation{
+	double apply(double x, double y)
+}
+
+public enum BasicOperation implements Operation{
+	PULS("+"){
+		public double apply(double x, double y){
+			return x + y;
+		}
+	},
+	MINUS("-"){
+		public double apply(double x, double y){
+			return x - y;
+		}
+	}
+	,
+	...
+	private final String symbol;
+
+	BasicOperation(String symbol){
+		this.symbol = symbol;
+	}
+
+	@Override public String toString(){
+		return symbol;
+	}
+}
+```
+
+-	열거 타입끼리 구현을 상속할 수 없다.
+
+-	책에 있는 핵심 정리
+
+	-	열거 타입 자체는 확장할 수 없지만, 인터페이스와 그 인터페이스를 구현하는 기본 열거 타입을 함께 사용해 같은 효과를 낼 수 있다.
+	-	API가 기본열거타입을 명시하지 않고 인터페이스 기반으로 작성되었다면 기본 열거 타입의 인스턴스가 쓰이는 모든 곳에 새로 확장한 열거 타입의 인스턴스로 대체해 사용할 수 있다.
