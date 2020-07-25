@@ -60,3 +60,47 @@ words.wort(comparingInt(String::length));
 
 	-	익명클래스는 함수형 인터페이스가 아닌 타입의 인스턴스를 만들 때만 사용하라.
 	-	람다는 작은 함수 객체를 아주 쉽게 표현할 수 있다.
+
+#### 아이템 43 람다보다는 메서드 참조를 사용하라
+
+-	자바에는 함수 객체를 람다보다 더 간결하게 만드는 방법이 있다. (메서드 참조)
+
+	-	메서드 참조를 사용하는 편이 보통 더 짧고 간결하다.
+
+-	메서드 참조의 유형은 다섯가지이다.
+
+	-	정적 메서드를 가리키는 메서드 참조
+	-	한정적 인스턴스 메서드를 참조
+	-	비한정적 인스턴스 메서드 참조
+	-	클래스 생성자를 가리키는 메서드 참조
+	-	배열 생성자를 가리키는 메서드 참조
+
+```java
+map.merge(key, 1, (count, incr) -> count + incr);
+
+// 메서드 참조 사용
+map.merge(key, 1, Integer::sum);
+
+// 유형별 예시
+// 정적
+str -> Interger.parseInt(str)
+Integer::parseInt
+
+// 한정적 인스턴스
+Instant then = Instant.now();
+t -> then.isAfter(t)
+
+// 비한정적 인스턴스
+str -> str.toLowerCase()
+String::toLowerCase
+
+// 클래스 생성자
+() -> new TreeMap<K,V>()
+
+// 배열 생성자
+len -> new int[len]
+int[]::new
+```
+
+-	책에 있는 핵심 정리
+	-	메서드 참조 쪽이 짧고 명확하다면 메서드 참조를 쓰고, 그렇지 않을 때만 람다를 사용하라.
