@@ -75,32 +75,68 @@ words.wort(comparingInt(String::length));
 	-	클래스 생성자를 가리키는 메서드 참조
 	-	배열 생성자를 가리키는 메서드 참조
 
-```java
-map.merge(key, 1, (count, incr) -> count + incr);
+	```java
+	map.merge(key, 1, (count, incr) -> count + incr);
 
-// 메서드 참조 사용
-map.merge(key, 1, Integer::sum);
 
-// 유형별 예시
-// 정적
-str -> Interger.parseInt(str)
-Integer::parseInt
+	// 메서드 참조 사용
+	map.merge(key, 1, Integer::sum);
 
-// 한정적 인스턴스
-Instant then = Instant.now();
-t -> then.isAfter(t)
 
-// 비한정적 인스턴스
-str -> str.toLowerCase()
-String::toLowerCase
+	// 유형별 예시
+	// 정적
+	str -> Integer.parseInt(str)
+	Integer::parseInt
 
-// 클래스 생성자
-() -> new TreeMap<K,V>()
 
-// 배열 생성자
-len -> new int[len]
-int[]::new
-```
+	// 한정적 인스턴스
+	Instant then = Instant.now();
+	t -> then.isAfter(t)
+
+
+	// 비한정적 인스턴스
+	str -> str.toLowerCase()
+	String::toLowerCase
+
+
+	// 클래스 생성자
+	() -> new TreeMap<K,V>()
+
+
+	// 배열 생성자
+	len -> new int[len]
+	int[]::new
+	```
 
 -	책에 있는 핵심 정리
+
 	-	메서드 참조 쪽이 짧고 명확하다면 메서드 참조를 쓰고, 그렇지 않을 때만 람다를 사용하라.
+
+#### 아이템 44 표준 함수형 인터페이스를 사용하라
+
+-	java.util.function 패키지를 보면 다양한 용도의 표준 함수형 인터페이스가 있다.
+
+> 필요한 용도에 맞는 게 있다면, 직접 구현하지 말고 표준 함수형 인터페이스를 활용하라.
+
+-	java.util.finction 패키지에는 43개의 인터페이스가 있지만, 기본 인터페이스 6가지만 기억하면 나머지를 충분히 유추해볼 수 있다.
+
+	-	UnaryOperator<T> (ex_ String::toLowerCase )
+	-	BinaryOperator<T> (ex_ BigInteger::add )
+	-	Predicate<T> (ex_ Collection::isEmpty )
+	-	Function<T> (ex_ Arrays::asList )
+	-	Supplier<T> (ex_ Instant::now )
+	-	Consumer<T> (ex_ System.out::println )
+
+-	표준 함수형 인터페이스 대부분은 기본 타입만 지원한다.
+
+	-	기본 함수형 인터페이스에 박싱된 기본 타입을 넣어 사용하지는 말자. (성능이 느려질 수 있다.)
+
+-	표준 인터페이스 중 필요한 용도에 맞는게 없다면 직접 작성해야 한다.
+
+-	직접 만든 함수형 인터페이스에는 항상 @FunctionalInterface 애너테이션을 사용하라.
+
+	-	해당 클래스의 코드나 설명 문서를 읽을 이에게 그 인터페이스가 람다용으로 설계된 것임을 알려준다.
+	-	해당 인터페이스가 추상 메서드를 오직 하나만 가지고 있어야 컴파일되게 해준다.
+	-	유지보수 과정에서 누군가 실수로 메서드를 추가하지 못하게 막는다.
+
+-	서로 다른 함수형 인터페이스를 같은 위치의 인수로 받는 메서드들을 다중 정의해서는 안된다.
