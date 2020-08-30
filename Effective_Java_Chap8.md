@@ -7,7 +7,7 @@
 
 -	메서드를 설계할 때 주의할 점들을 살펴본다.
 
-#### 아아템 49 매개변수가 유효한지 검사하라
+#### 아이템 49 매개변수가 유효한지 검사하라
 
 -	메서드와 생성자 대부분은 입력 매개변수의 값이 특정 조건을 만족하기를 바란다. (음수 X, null X 등)
 
@@ -45,3 +45,111 @@ this.strategy = Objects.requireNonNill(strategy, "전략");
 
 	-	메서드나 생성자를 작성할 때면 그 매개변수들에 어떤 제약이 있을지 생각해야한다.
 	-	그 제약들을 문서화하고 메서드 코드 시작부분에서 명시적으로 검사해야 한다.
+
+#### 아이템 50 적시에 방어적 복사본을 만들라
+
+-	자바는 안전한 언어다.
+
+	-	네이티브 메서드를 사용하지 않으니, C, C++ 같이 안전하지 않은 언어에서 흔히 보는 버퍼 오버런, 배열 오버런, 와일드 포인터 같은 메모리 충돌 오류에서 안전하다.
+
+-	하지만, 다른 클래스로부터의 침범을 아무런 노력없이 다 막을 수 없는 건 아니다.
+
+	-	따라서 클라이언트가 불변식을 깨뜨리려 혈안이 되어 있다고 가정하고 방어적으로 프로그래밍 해야한다.
+
+```java
+public final class Period {
+	private final Date start;
+	private final Data end;
+
+	public Period(Date start, Date end){
+		if(start.compareTo(end) > 0){
+			throw new IllegalArgumentException();
+		}
+
+		this.start = start;
+		this.end = end;
+	}
+
+	public Data start(){
+		return start;
+	}
+
+	public Date end(){
+		return end;
+	}
+	...
+}
+
+// Date가 가변이라는 사실을 이용하여 Period 인스턴스 내부 공격
+Date start = new Date();
+Date end = new Date();
+Period p = new Period(start, end);
+end.setYear(78); // p 내부 수정하기
+```
+
+-	Date 대신 불변인 Instant 를 사용하면 위의 공격을 방지할 수 있다. (LocalDateTime 이나 ZoneDateTime 사용가능)
+
+	-	Date는 낡은 API이니 새로운 코드를 작성할 때는 더 이상 사용하면 안된다.
+
+-	외부 공격으로부터 Period 인스턴스의 내부를 보호하려면 생성자에게서 받은 가변 매개변수 각각을 방어적으로 복사해야 한다.
+
+```java
+// 매개변수의 유효성 검사하기 전에 방어적 복사본을 만들고, 이 복사본으로 유효성 검사한 예시
+public Period(Date start, Date end){
+
+	this.start = new Date(start.getTime());
+	this.end = new Date(end.getTime());
+
+	if(this.start.compareTo(this.end) > 0){
+		throw new IllegalArgumentException();
+	}
+
+}
+```
+
+-	멀티스레딩 환경이라면 원본 객체의 유효성 검사한 후 복사본을 만드는 그 찰나의 취약한 순간에 다른 스레드가 원본 객체를 수정할 위험이 있으니 위와 같이 작성해야한다. (검사시점/사용 시점 공격)
+
+-	방어적 복사에 Date의 clone 메서드를 사용하지 않는다.
+
+	-	Date는 final이 아니므로 clone이 Date가 정의한 게 아닐 수 있다. (이 하위클래스는 start와 end 필드의 참조를 private 정적 리스트에 담아뒀다가 공격자에게 이 리스트를 접근하는 길을 열어 줄 수 있음)
+
+	-	매개변수가 제 3자에 의해 확장될 수 있는 타입이라면 방어적 복사본을 만들 때 clone을 사용해서는 안된다.
+
+-	Period 인스턴스는 아직 변경이 가능하다.
+
+```java
+Date start = new Date();
+Date end = new Date();
+Period p = new Period(start, end);
+p.end().setYear(78); // p 내부 수정하기
+```
+
+-	가변필드의 방어적 복사본을 반환하자.
+
+```java
+public Data start(){
+	return new Date(start.getTime());
+}
+
+public Date end(){
+	return new Date(end.getTime());
+}
+```
+
+-	매개변수를 방어적으로 복사하는 목적이 불변객체를 만들기 위해서만은 아니다.
+
+	-	메서드든 생성자든 클라이언트가 제공한 객체의 참조를 내부의 자료구조에 보관해야할 때면 항시 그 객체가 잠재적으로 변경될 수 있는지를 생각해야한다.
+	-	변경할 수 없어야한다면 방어적본사본을 활용하자.
+
+-	방어적 복사에는 성능 저하가 따르고, 항상 쓸 수 있는 것도 아니다.
+
+	-	호출자가 컴포넌트 내부를 수정하지 않으리라 확실하면 방어적 복사를 생략할 수 있다. (이 상황에도 호출자에서 해당 매개변수나 반환 값을 수정하지 말아야 함을 명확히 문서화하는 게 좋다.)
+
+-	통제권을 넘겨받기로 한 메서드나 생성자를 가진 클래스들은 악의적인 클라이언트의 공격에 취약하다.
+
+	-	방어적 복사를 생략해도 되는 상황은 해당 클래스와 그 클라이언트가 상호 신뢰할 수 있을 때, 혹은 불변식이 깨지더라도 그 영향이 오직 호출한 클라이언트로 국한될 떄로 한정해야 한다.
+
+-	책에 있는 핵심 정리
+
+	-	클래스가 클라이언트로부터 받은 혹은 클라이언트로 반환하는 구성요소가 가변이라면 그 요소는 반드시 방어적으로 복사해야 한다.
+	-	복사 비용이 너무 크거나 클라이언트가 그 요소를 잘못 수정할 일이 없음을 신뢰한다면 방어적 복사를 수행하는 대신 해당 구성요소를 수정했을 때의 책임이 클라이언트에 있음을 문서에 명시하자.
