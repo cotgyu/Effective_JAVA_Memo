@@ -212,3 +212,94 @@ public Date end(){
 		-	이것이 불가능하다면 (기존 클래스를 수정해 새로운 인터페이스를 구현해야 할 때) 같은 객체를 입력받는 다중 정의 메서드들이 모두 동일하게 동작하도록 만들어야 한다.
 
 		-	그렇지 못하면 프로그래머들은 다중정의된 메서드나 생성자를 효과적으로 사용하지 못할 것이고, 의도대로 동작하지 않는 이유를 이해하지 못할 것이다.
+
+#### 아이템 53 가변인수는 신중히 사용하라
+
+-	가변인수 메서드는 명시한 타입의 인수를 0개 이상 받을 수 있다.
+
+-	가변인수 메서드를 호출하면, 가장 먼저 인수의 개수와 길이가 같은 배열을 만들고 인수들을 이 배열에서 저장하여 가변인수 메서드에 건네준다.
+
+```java
+static int sum(int... args){
+	int sum = 0;
+	for(int arg : args){
+		sum += arg;
+	}
+	return sum;
+}
+
+// 인수가 1개 이상이어야할 때 가변인수를 제대로 사용하는 방법
+static int min(int firstArg, int... remainingArgs){
+	int mim = firstArg;
+	for(int arg : remainingArgs){
+		if (arg < min){
+			min = arg;
+		}
+		return min;
+	}
+}
+```
+
+-	가변인수 메서드는 호출될 때마다 배열을 새로 하나 할당하고 초기화된다. 성능에 민감한 상황인 경우 가변인수가 걸림돌이 될 수 있음
+
+	-	인수가 0개인 것부터 n개 인것까지 다중 정의하여 해소할 수 있다.
+
+-	책에 있는 핵심 정리
+
+	-	인수 개수가 일정하지 않은 메서드를 정의해야 한다면 가변인수가 반드시 필요하다.
+	-	메서드를 정의할 때 필수 매개변수는 가변인수 앞에 두고, 가변인수를 사용할 때는 성능 문제까지 고려하자.
+
+#### 아이템 54 null이 아닌, 빈 컬렉션이나 배열을 반환하라
+
+-	컬렉션이나 배열 같은 컨테이너가 비었을 때 null을 반환하는 메서드를 사용할 때면 항시 방어 코드를 넣어줘야한다.
+
+> 클라이언트에서 방어코드를 뺴먹으면 오류가 발생할 수 있다.
+
+-	빈 컨테이너 할당에도 비용이 드니 null을 반환하는 것이 낫다는 주장도 있지만 두 가지면에서 틀리다고 한다.
+
+	-	이 정도 성능 차이는 신경 쓸 수준이 못된다.
+	-	빈 컬렉션과 배열은 굳이 새로 할당하지 않고도 반환할 수 있다.
+
+		```java
+		public List<Cheese> getCheese(){
+		    return new ArrayList<>(cheeseInStock);
+		}
+		```
+
+	-	가능성은 작지만, 사용 패턴에 따라 빈 컬렉션 할당이 성능을 눈에 띄게 떨어뜨릴 수 있다.
+
+		-	해법은 매번 똑같은 빈 불변 컬렉션을 반환하는 것이다. (Collections.emptyList(), Collections.emptySet(), Collections.emptyMap() )
+
+			```java
+			public List<Cheese> getCheese(){
+			    return cheeseInStock.isEmpty() ? Collections.emptyList() : new ArrayList<>(cheeseInStock);
+			}
+			```
+
+		-	배열은 길이가 0인 배열을 반환하라. 혹은 길이가 0짜리 배열을 미리 선언해두고 매번 그 배열을 반환하라
+
+			```java
+			public Cheese[] getCheese() {
+			    return cheeseInStock.toArray(new Cheese[0]);
+			}
+
+
+			// 길이가 0인 배열 미리 선언
+			private static final Cheese[] EMPTY_CHEESE_ARRAY = new Cheese[0];
+
+
+			public Cheese[] getCheese(){
+			    return cheeseInStock.toArray(EMPTY_CHEESE_ARRAY);
+			}
+			```
+
+-	단순히 성능을 개선할 목적이라면 toArray에 넘기는 배열을 미리 할당하는 건 추천하지 않는다. 오히려 성능을 떨어뜨린다는 연구 결과도 있다.
+
+	```java
+	return cheeseInStock.toArray(new Cheese[cheeseInStock.size()]);
+	```
+
+-	책에 있는 핵심 정리
+
+	-	null이 아닌, 빈 배열이나 컬렉션을 반환하라.
+	-	null을 반환하는 API는 사용하기 어렵고 오류처리 코드도 늘어난다. 그렇다고 성능이 좋은 것도 아니다.
