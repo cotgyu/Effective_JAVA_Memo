@@ -83,3 +83,78 @@
 	-	API 호출자가 예외 상황에서 복구할 방법이 없다면 비검사 예외를 던지자.
 	-	복구가 가능하고 호출자가 그 처리를 해주길 바란다면, 우선 옵셔널을 반환해도 될지 고민하자.
 	-	**옵셔널만으로는 상황을 처리하기에 충분한 정보를 제공할수 없을 때만 검사 예외를 던지자.**
+
+#### 아이템 72 표준 예외를 사용하라
+
+-	숙련된 프로그래머는 많은 코드를 재사용한다.
+
+	-	예외도 마찬가지로 재사용하는 것이 좋으며, 자바 라이브러리는 대부분 API에 쓰기 충분한 수의 예외를 제공한다.
+
+-	표준 예외를 재사용하면 얻는게 많다.
+
+	-	익히고 사용하기 쉬워짐
+	-	예외 클래스 수가 적을 수록 메모리 사용량이 줄고 클래스를 적재한느 시간도 적게 걸림
+
+-	많이 재사용되는 예외
+
+	-	IllegalArgumentException
+	-	IllegalStateException
+	-	ConcurrentModificationException
+	-	UnsupportedOperationException
+
+-	Exception, RuntimeException, Throwable, Error는 직접 재사용하지 말자.
+
+	-	이 예외들은 다른 예외들의 상위 클래스이므로, 안정적으로 테스트할 수 없다. (여러 성격의 예외들을 포괄하는 클래스)
+
+#### 아이템 73 추상화 수준에 맞는 예외를 던져라
+
+-	메서드가 저수준 예외를 처리하지 않고 바깥으로 전파해버릴 때 수행하려는 일과 관련 없어보이는 에외가 튀어나올 수 있다.
+
+	-	이는 내부 구현 방식을 드러내어 윗 레벨 API를 오염시킨다.
+	-	이 문제를 피하려면 상위 계층에서는 저수준 예외를 잡아 자신의 추상화 수준에 맞는 예외로 바꿔 던져야한다. (예외 번역 exception translation)
+
+```java
+// 예외 번역
+public E get(int index){
+	ListIterator<E> i = listIterator(index);
+	try{
+		return i.next();
+	} catch (NoSuchElementException e){
+		throw new IndexOutOfBoundsException("인데스: " +i index);
+	}
+}
+
+
+// 예외 연쇄 (저수준 예외가 디버깅에 도움이 된다면 사용)
+try{
+	...
+}catch (LowerLevelException cause){
+	throw new HigherLevelException(cause);
+}
+
+// 예외 연쇄용 생성자
+class HigherLevelException extends Exception {
+	HigherLevelException(Throwable cause) {
+		super(cause);
+	}
+}
+```
+
+-	대부분의 표준 예외는 예외 연쇄용 생성자를 갖추고 있다.
+
+	-	그렇지 않은 예외라도 Throwable의 initCause 메서드를 통해 원인을 직접 못박을 수 있다.
+
+-	무턱대고 예외를 전파하는 것보다 예외 번역이 우수한 방법이지만, 그렇다고 남용해서는 곤란하다.
+
+	-	가능하면 저수준 메서드가 반드시 성공하도록하여 아래계층에서는 예외가 발생하지 않도록 하는 것이 최선이다.
+
+	-	때론 상위 계층 메서드의 매개변수 값을 아래 계층 메서드로 건네기 전에 미리 검사하는 방법으로 이 목적을 달성할 수 있다.
+
+	-	아래 계층에서 예외를 피할 수 없다면 상위 계층에서 그 예외를 조용히 처리하여 문제를 API 호출자에까지 전파하지 않는 방법이 있다.
+
+		-	이 경우 발생한 예외는 java.util.logging 같은 적절한 로깅 기능을 활용하여 기록해두면 좋음
+
+-	책에 있는 핵심 정리
+
+	-	아래 계층의 예외를 예방하거나 스스로 처리할 수 없고, 그 예외를 상위 계층에 그대로 노출하기 곤란하다면 예외 번역을 사용하라.
+	-	이때 예외 연쇄를 이용하면 상위 계층에는 맥락에 어울리는 고수준 예외를 던지면서 근본 원인도 함께 알려주어 오류를 분석하기에 좋다.
